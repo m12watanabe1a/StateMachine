@@ -26,12 +26,18 @@ private:
   void ST_ChangeSpeed(MotorData *);
 
   // state map to define state function order
-  BEGIN_STATE_MAP
-  STATE_MAP_ENTRY(&Motor::ST_Idle)
-  STATE_MAP_ENTRY(&Motor::ST_Stop)
-  STATE_MAP_ENTRY(&Motor::ST_Start)
-  STATE_MAP_ENTRY(&Motor::ST_ChangeSpeed)
-  END_STATE_MAP
+public:
+  const StateStruct *GetStateMap()
+  {
+    static const StateStruct StateMap[] = {
+        {reinterpret_cast<StateFunc>(&Motor::ST_Idle)},
+        {reinterpret_cast<StateFunc>(&Motor::ST_Stop)},
+        {reinterpret_cast<StateFunc>(&Motor::ST_Start)},
+        {reinterpret_cast<StateFunc>(&Motor::ST_ChangeSpeed)},
+    };
+
+    return &StateMap[0];
+  }
 
   // state enumeration order must match the order of state
   // method entries in the state map
