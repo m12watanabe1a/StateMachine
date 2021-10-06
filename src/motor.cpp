@@ -7,25 +7,26 @@ using namespace std;
 // halt motor external event
 void Motor::Halt(void)
 {
-  // given the Halt event, transition to a new state based upon
-  // the current state of the state machine
-  BEGIN_TRANSITION_MAP                    // - Current State -
-      TRANSITION_MAP_ENTRY(EVENT_IGNORED) // ST_Idle
-      TRANSITION_MAP_ENTRY(CANNOT_HAPPEN) // ST_Stop
-      TRANSITION_MAP_ENTRY(ST_STOP)       // ST_Start
-      TRANSITION_MAP_ENTRY(ST_STOP)       // ST_ChangeSpeed
-      END_TRANSITION_MAP(NULL)
+  static const unsigned char TRANSITIONS[] = {
+      EVENT_IGNORED,
+      CANNOT_HAPPEN,
+      ST_STOP,
+      ST_STOP,
+  };
+  ExternalEvent(TRANSITIONS[currentState], NULL);
 }
 
 // set motor speed external event
 void Motor::SetSpeed(MotorData *pData)
 {
-  BEGIN_TRANSITION_MAP                      // - Current State -
-      TRANSITION_MAP_ENTRY(ST_START)        // ST_Idle
-      TRANSITION_MAP_ENTRY(CANNOT_HAPPEN)   // ST_Stop
-      TRANSITION_MAP_ENTRY(ST_CHANGE_SPEED) // ST_Start
-      TRANSITION_MAP_ENTRY(ST_CHANGE_SPEED) // ST_ChangeSpeed
-      END_TRANSITION_MAP(pData)
+  static const unsigned char TRANSITIONS[] = {
+      ST_START,
+      CANNOT_HAPPEN,
+      ST_CHANGE_SPEED,
+      ST_CHANGE_SPEED,
+      0,
+  };
+  ExternalEvent(TRANSITIONS[currentState], pData);
 }
 
 // state machine sits here when motor is not running
