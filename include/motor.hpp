@@ -1,53 +1,51 @@
 #ifndef _MOTOR_H
 #define _MOTOR_H
+
 #include "state_machine.hpp"
 
-// structure to hold event data passed into state machine
-struct MotorData : public EventData
+class MotorData : public EventData
 {
+public:
   int speed;
 };
 
-// the Motor state machine class
 class Motor : public StateMachine
 {
 public:
-  Motor() : StateMachine(ST_MAX_STATES) {}
+  Motor();
 
-  // external events taken by this state machine
+  // External events taken by this state machine
+  void SetSpeed(MotorData *data);
   void Halt();
-  void SetSpeed(std::shared_ptr<EventData>);
 
 private:
-  // state machine state functions
-  void ST_Idle(std::shared_ptr<EventData>);
-  void ST_Stop(std::shared_ptr<EventData>);
-  void ST_Start(std::shared_ptr<MotorData>);
-  void ST_ChangeSpeed(std::shared_ptr<MotorData>);
+  int m_currentSpeed;
 
-  // state map to define state function order
-public:
-  const StateStruct *GetStateMap()
+  // State enumeration order must match the order of state method entries
+  // in the state map.
+  enum States
   {
-    static const StateStruct StateMap[] = {
-        {reinterpret_cast<StateFunc>(&Motor::ST_Idle)},
-        {reinterpret_cast<StateFunc>(&Motor::ST_Stop)},
-        {reinterpret_cast<StateFunc>(&Motor::ST_Start)},
-        {reinterpret_cast<StateFunc>(&Motor::ST_ChangeSpeed)},
-    };
-
-    return &StateMap[0];
-  }
-
-  // state enumeration order must match the order of state
-  // method entries in the state map
-  enum E_States
-  {
-    ST_IDLE = 0,
+    ST_IDLE,
     ST_STOP,
     ST_START,
     ST_CHANGE_SPEED,
     ST_MAX_STATES
   };
+
+  // Define the state machine state functions with event data type
+  STATE_DECLARE(Motor, Idle, NoEventData)
+  STATE_DECLARE(Motor, Stop, NoEventData)
+  STATE_DECLARE(Motor, Start, MotorData)
+  STATE_DECLARE(Motor, ChangeSpeed, MotorData)
+
+  // State map to define state object order. Each state map entry defines a
+  // state object.
+  BEGIN_STATE_MAP
+  STATE_MAP_ENTRY(&Idle)
+  STATE_MAP_ENTRY(&Stop)
+  STATE_MAP_ENTRY(&Start)
+  STATE_MAP_ENTRY(&ChangeSpeed)
+  END_STATE_MAP
 };
-#endif // _MOTOR_H
+
+#endif

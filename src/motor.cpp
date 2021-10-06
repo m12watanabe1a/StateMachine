@@ -1,61 +1,65 @@
-#include <assert.h>
 #include "motor.hpp"
+
 #include <iostream>
 
 using namespace std;
 
-// halt motor external event
-void Motor::Halt(void)
+Motor::Motor() : StateMachine(ST_MAX_STATES),
+                 m_currentSpeed(0)
 {
-  static const uint8_t TRANSITIONS[] = {
-      EVENT_IGNORED,
-      CANNOT_HAPPEN,
-      ST_STOP,
-      ST_STOP,
-      0,
-  };
-  ExternalEvent(TRANSITIONS[currentState], NULL);
 }
 
 // set motor speed external event
-void Motor::SetSpeed(std::shared_ptr<EventData> pData)
+void Motor::SetSpeed(MotorData *data)
 {
-  static const uint8_t TRANSITIONS[] = {
-      ST_START,
-      CANNOT_HAPPEN,
-      ST_CHANGE_SPEED,
-      ST_CHANGE_SPEED,
-      0,
-  };
-  ExternalEvent(TRANSITIONS[currentState], pData);
+  BEGIN_TRANSITION_MAP                      // - Current State -
+      TRANSITION_MAP_ENTRY(ST_START)        // ST_IDLE
+      TRANSITION_MAP_ENTRY(CANNOT_HAPPEN)   // ST_STOP
+      TRANSITION_MAP_ENTRY(ST_CHANGE_SPEED) // ST_START
+      TRANSITION_MAP_ENTRY(ST_CHANGE_SPEED) // ST_CHANGE_SPEED
+      END_TRANSITION_MAP(data)
 }
 
+// halt motor external event
+void Motor::Halt(){
+    BEGIN_TRANSITION_MAP                    // - Current State -
+        TRANSITION_MAP_ENTRY(EVENT_IGNORED) // ST_IDLE
+    TRANSITION_MAP_ENTRY(CANNOT_HAPPEN)     // ST_STOP
+    TRANSITION_MAP_ENTRY(ST_STOP)           // ST_START
+    TRANSITION_MAP_ENTRY(ST_STOP)           // ST_CHANGE_SPEED
+    END_TRANSITION_MAP(NULL)}
+
 // state machine sits here when motor is not running
-void Motor::ST_Idle(std::shared_ptr<EventData> pData)
+STATE_DEFINE(Motor, Idle, NoEventData)
 {
   cout << "Motor::ST_Idle" << endl;
 }
 
 // stop the motor
-void Motor::ST_Stop(std::shared_ptr<EventData> pData)
+STATE_DEFINE(Motor, Stop, NoEventData)
 {
   cout << "Motor::ST_Stop" << endl;
+  m_currentSpeed = 0;
 
   // perform the stop motor processing here
-  // transition to ST_Idle via an internal event
+  // transition to Idle via an internal event
   InternalEvent(ST_IDLE);
 }
 
 // start the motor going
-void Motor::ST_Start(std::shared_ptr<MotorData> pData)
+STATE_DEFINE(Motor, Start, MotorData)
 {
-  cout << "Motor::ST_Start" << endl;
+  cout << "Motor::ST_Start : Speed is " << data->speed << endl;
+  m_currentSpeed = data->speed;
+
   // set initial motor speed processing here
 }
 
 // changes the motor speed once the motor is moving
-void Motor::ST_ChangeSpeed(std::shared_ptr<MotorData> pData)
+STATE_DEFINE(Motor, ChangeSpeed, MotorData)
 {
-  cout << "Motor::ST_ChangeSpeed" << endl;
-  // perform the change motor speed to pData->speed here
+  cout << "Motor::ST_ChangeSpeed : Speed is " << data->speed << endl;
+  m_currentSpeed = data->speed;
+
+  // perform the change motor speed to data->speed here
 }
