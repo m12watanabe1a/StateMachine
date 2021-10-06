@@ -1,6 +1,8 @@
 #ifndef _STATE_MACHINE_H
 #define _STATE_MACHINE_H
 #include <stdio.h>
+#include <memory>
+#include <cinttypes>
 
 class EventData
 {
@@ -14,7 +16,7 @@ struct StateStruct;
 class StateMachine
 {
 public:
-  StateMachine(unsigned char maxStates);
+  StateMachine(uint8_t maxStates);
   virtual ~StateMachine() {}
 
 protected:
@@ -23,19 +25,19 @@ protected:
     EVENT_IGNORED = 0xFE,
     CANNOT_HAPPEN
   };
-  unsigned char currentState;
-  void ExternalEvent(unsigned char, EventData * = NULL);
-  void InternalEvent(unsigned char, EventData * = NULL);
+  uint8_t currentState;
+  void ExternalEvent(uint8_t, std::shared_ptr<EventData> = nullptr);
+  void InternalEvent(uint8_t, std::shared_ptr<EventData> = nullptr);
   virtual const StateStruct *GetStateMap() = 0;
 
 private:
-  const unsigned char _maxStates;
+  const uint8_t _maxStates;
   bool _eventGenerated;
-  EventData *_pEventData;
+  std::shared_ptr<EventData> _pEventData;
   void StateEngine(void);
 };
 
-typedef void (StateMachine::*StateFunc)(EventData *);
+typedef void (StateMachine::*StateFunc)(std::shared_ptr<EventData>);
 struct StateStruct
 {
   StateFunc pStateFunc;

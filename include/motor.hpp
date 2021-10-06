@@ -16,14 +16,14 @@ public:
 
   // external events taken by this state machine
   void Halt();
-  void SetSpeed(MotorData *);
+  void SetSpeed(std::shared_ptr<EventData>);
 
 private:
   // state machine state functions
-  void ST_Idle(EventData *);
-  void ST_Stop(EventData *);
-  void ST_Start(MotorData *);
-  void ST_ChangeSpeed(MotorData *);
+  void ST_Idle(std::shared_ptr<EventData>);
+  void ST_Stop(std::shared_ptr<EventData>);
+  void ST_Start(std::shared_ptr<MotorData>);
+  void ST_ChangeSpeed(std::shared_ptr<MotorData>);
 
   // state map to define state function order
 public:
