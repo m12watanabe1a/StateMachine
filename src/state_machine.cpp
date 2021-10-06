@@ -37,7 +37,9 @@ void StateMachine::InternalEvent(uint8_t newState,
                                  std::shared_ptr<EventData> pData)
 {
   if (pData)
+  {
     pData = std::make_shared<EventData>();
+  }
 
   _pEventData = pData;
   _eventGenerated = true;
