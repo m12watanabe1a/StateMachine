@@ -184,15 +184,10 @@ private:
 #define EXIT_DEFINE(stateMachine, exitName) \
   void stateMachine::EX_##exitName(void)
 
-#define BEGIN_TRANSITION_MAP \
-  static const uint8_t TRANSITIONS[] = {
-
 #define TRANSITION_MAP_ENTRY(entry) \
   entry,
 
 #define END_TRANSITION_MAP(data)                       \
-  }                                                    \
-  ;                                                    \
   assert(GetCurrentState() < ST_MAX_STATES);           \
   ExternalEvent(TRANSITIONS[GetCurrentState()], data); \
   static_assert((sizeof(TRANSITIONS) / sizeof(uint8_t)) == ST_MAX_STATES);
@@ -203,43 +198,6 @@ private:
   {                                         \
     ExternalEvent(state);                   \
     return;                                 \
-  }
-
-#define BEGIN_STATE_MAP                                         \
-private:                                                        \
-  virtual const StateMapRowEx *GetStateMapEx() { return NULL; } \
-  virtual const StateMapRow *GetStateMap()                      \
-  {                                                             \
-    static const StateMapRow STATE_MAP[] = {
-
-#define STATE_MAP_ENTRY(stateName) \
-  stateName,
-
-#define END_STATE_MAP                                                        \
-  }                                                                          \
-  ;                                                                          \
-  static_assert((sizeof(STATE_MAP) / sizeof(StateMapRow)) == ST_MAX_STATES); \
-  return &STATE_MAP[0];                                                      \
-  }
-
-#define BEGIN_STATE_MAP_EX                                  \
-private:                                                    \
-  virtual const StateMapRow *GetStateMap() { return NULL; } \
-  virtual const StateMapRowEx *GetStateMapEx()              \
-  {                                                         \
-    static const StateMapRowEx STATE_MAP[] = {
-
-#define STATE_MAP_ENTRY_EX(stateName) \
-  {stateName, 0, 0, 0},
-
-#define STATE_MAP_ENTRY_ALL_EX(stateName, guardName, entryName, exitName) \
-  {stateName, guardName, entryName, exitName},
-
-#define END_STATE_MAP_EX                                                       \
-  }                                                                            \
-  ;                                                                            \
-  static_assert((sizeof(STATE_MAP) / sizeof(StateMapRowEx)) == ST_MAX_STATES); \
-  return &STATE_MAP[0];                                                        \
   }
 
 #endif // _STATE_MACHINE_H

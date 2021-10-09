@@ -40,12 +40,19 @@ private:
 
   // State map to define state object order. Each state map entry defines a
   // state object.
-  BEGIN_STATE_MAP
-  STATE_MAP_ENTRY(&Idle)
-  STATE_MAP_ENTRY(&Stop)
-  STATE_MAP_ENTRY(&Start)
-  STATE_MAP_ENTRY(&ChangeSpeed)
-  END_STATE_MAP
+private:
+  virtual const StateMapRowEx *GetStateMapEx() { return nullptr; }
+  virtual const StateMapRow *GetStateMap()
+  {
+    static const StateMapRow STATE_MAP[]{
+        &Idle,
+        &Stop,
+        &Start,
+        &ChangeSpeed,
+    };
+    static_assert((sizeof(STATE_MAP) / sizeof(StateMapRow)) == ST_MAX_STATES);
+    return &STATE_MAP[0];
+  }
 };
 
 #endif

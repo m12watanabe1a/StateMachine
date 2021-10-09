@@ -12,22 +12,26 @@ Motor::Motor() : StateMachine(ST_MAX_STATES),
 // set motor speed external event
 void Motor::SetSpeed(MotorData *data)
 {
-  BEGIN_TRANSITION_MAP                      // - Current State -
+  static const uint8_t TRANSITIONS[] = {
       TRANSITION_MAP_ENTRY(ST_START)        // ST_IDLE
       TRANSITION_MAP_ENTRY(CANNOT_HAPPEN)   // ST_STOP
       TRANSITION_MAP_ENTRY(ST_CHANGE_SPEED) // ST_START
       TRANSITION_MAP_ENTRY(ST_CHANGE_SPEED) // ST_CHANGE_SPEED
-      END_TRANSITION_MAP(data)
+  };
+  END_TRANSITION_MAP(data)
 }
 
 // halt motor external event
-void Motor::Halt(){
-    BEGIN_TRANSITION_MAP                    // - Current State -
-        TRANSITION_MAP_ENTRY(EVENT_IGNORED) // ST_IDLE
-    TRANSITION_MAP_ENTRY(CANNOT_HAPPEN)     // ST_STOP
-    TRANSITION_MAP_ENTRY(ST_STOP)           // ST_START
-    TRANSITION_MAP_ENTRY(ST_STOP)           // ST_CHANGE_SPEED
-    END_TRANSITION_MAP(NULL)}
+void Motor::Halt()
+{
+  static const uint8_t TRANSITIONS[] = {
+      TRANSITION_MAP_ENTRY(EVENT_IGNORED) // ST_IDLE
+      TRANSITION_MAP_ENTRY(CANNOT_HAPPEN) // ST_STOP
+      TRANSITION_MAP_ENTRY(ST_STOP)       // ST_START
+      TRANSITION_MAP_ENTRY(ST_STOP)       // ST_CHANGE_SPEED
+  };
+  END_TRANSITION_MAP(NULL)
+}
 
 // state machine sits here when motor is not running
 STATE_DEFINE(Motor, Idle, NoEventData)
