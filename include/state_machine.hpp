@@ -13,7 +13,7 @@ public:
   //XALLOCATOR
 };
 
-typedef EventData NoEventData;
+using NoEventData = EventData;
 
 class StateMachine;
 
