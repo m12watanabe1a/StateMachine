@@ -1,5 +1,4 @@
-#ifndef _STATE_MACHINE_H
-#define _STATE_MACHINE_H
+#pragma once
 
 #include <stdio.h>
 #include <typeinfo>
@@ -10,104 +9,106 @@ class EventData
 {
 public:
   virtual ~EventData() {}
-  //XALLOCATOR
 };
 
 using NoEventData = EventData;
 
 class StateMachine;
-
 class StateBase
 {
 public:
-  virtual void InvokeStateAction(StateMachine *sm, const EventData *data) const = 0;
+  virtual void invokeStateAction(
+      StateMachine *sm,
+      const EventData *data) const = 0;
 };
 
 template <class SM, class Data, void (SM::*Func)(const Data *)>
 class StateAction : public StateBase
 {
 public:
-  virtual void InvokeStateAction(StateMachine *sm, const EventData *data) const
+  virtual void invokeStateAction(StateMachine *sm, const EventData *data) const
   {
-    SM *derivedSM = static_cast<SM *>(sm);
+    SM *derived_sm = static_cast<SM *>(sm);
 
-    const Data *derivedData = dynamic_cast<const Data *>(data);
-    assert(derivedData != NULL);
+    const Data *derived_data = dynamic_cast<const Data *>(data);
+    assert(derived_data != nullptr);
 
-    (derivedSM->*Func)(derivedData);
+    (derived_sm->*Func)(derived_data);
   }
 };
 
 class GuardBase
 {
 public:
-  virtual bool InvokeGuardCondition(StateMachine *sm, const EventData *data) const = 0;
+  virtual bool invokeGuardCondition(
+      StateMachine *sm,
+      const EventData *data) const = 0;
 };
 
 template <class SM, class Data, bool (SM::*Func)(const Data *)>
 class GuardCondition : public GuardBase
 {
 public:
-  virtual bool InvokeGuardCondition(StateMachine *sm, const EventData *data) const
+  virtual bool invokeGuardCondition(StateMachine *sm, const EventData *data) const
   {
-    SM *derivedSM = static_cast<SM *>(sm);
-    const Data *derivedData = dynamic_cast<const Data *>(data);
-    assert(derivedData != NULL);
+    SM *derived_sm = static_cast<SM *>(sm);
+    const Data *derived_data = dynamic_cast<const Data *>(data);
+    assert(derived_data != NULL);
 
-    // Call the guard function
-    return (derivedSM->*Func)(derivedData);
+    return (derived_sm->*Func)(derived_data);
   }
 };
 
 class EntryBase
 {
 public:
-  virtual void InvokeEntryAction(StateMachine *sm, const EventData *data) const = 0;
+  virtual void invokeEntryAction(StateMachine *sm, const EventData *data) const = 0;
 };
 
 template <class SM, class Data, void (SM::*Func)(const Data *)>
 class EntryAction : public EntryBase
 {
 public:
-  virtual void InvokeEntryAction(StateMachine *sm, const EventData *data) const
+  virtual void invokeEntryAction(StateMachine *sm, const EventData *data) const
   {
-    SM *derivedSM = static_cast<SM *>(sm);
-    const Data *derivedData = dynamic_cast<const Data *>(data);
-    assert(derivedData != NULL);
+    SM *derived_sm = static_cast<SM *>(sm);
+    const Data *derived_data = dynamic_cast<const Data *>(data);
+    assert(derived_data != nullptr);
 
-    (derivedSM->*Func)(derivedData);
+    (derived_sm->*Func)(derived_data);
   }
 };
 
 class ExitBase
 {
 public:
-  virtual void InvokeExitAction(StateMachine *sm) const = 0;
+  virtual void invokeExitAction(
+      StateMachine *sm) const = 0;
 };
 
 template <class SM, void (SM::*Func)(void)>
 class ExitAction : public ExitBase
 {
 public:
-  virtual void InvokeExitAction(StateMachine *sm) const
+  virtual void invokeExitAction(StateMachine *sm) const
   {
-    SM *derivedSM = static_cast<SM *>(sm);
+    SM *derived_sm = static_cast<SM *>(sm);
 
-    (derivedSM->*Func)();
+    (derived_sm->*Func)();
   }
 };
 
 struct StateMapRow
 {
-  const StateBase *const State;
+  const StateBase *const state;
 };
 
 struct StateMapRowEx
 {
-  const StateBase *const State;
-  const GuardBase *const Guard;
-  const EntryBase *const Entry;
-  const ExitBase *const Exit;
+  const StateBase *const state;
+  const GuardBase *const guard;
+  const EntryBase *const entry;
+  const ExitBase *const exit;
 };
 
 class StateMachine
@@ -119,41 +120,38 @@ public:
     CANNOT_HAPPEN
   };
 
-  ///	Constructor.
-  ///	@param[in] maxStates - the maximum number of state machine states.
-  StateMachine(uint8_t maxStates, uint8_t initialState = 0);
-
+  StateMachine(uint8_t max_states, uint8_t initial_state = 0);
   virtual ~StateMachine() {}
-
-  uint8_t GetCurrentState() { return m_currentState; }
-
-  uint8_t GetMaxStates() { return MAX_STATES; }
+  uint8_t getCurrentState() { return this->current_state_; }
+  uint8_t getMaxStates() { return this->max_states_; }
 
 protected:
-  void ExternalEvent(uint8_t newState, const EventData *pData = NULL);
-
-  void InternalEvent(uint8_t newState, const EventData *pData = NULL);
+  void externalEvent(
+      uint8_t new_state,
+      const EventData *data_ptr = nullptr);
+  void internalEvent(
+      uint8_t new_state,
+      const EventData *data_ptr = nullptr);
 
 private:
-  const uint8_t MAX_STATES;
+  const uint8_t max_states_;
+  uint8_t current_state_;
+  uint8_t new_state_;
 
-  uint8_t m_currentState;
+  bool event_generated_;
 
-  uint8_t m_newState;
+  const EventData *event_data_ptr;
+  virtual const StateMapRow *getStateMap() = 0;
+  virtual const StateMapRowEx *getStateMapEx() = 0;
 
-  bool m_eventGenerated;
+  void setCurrentState(uint8_t new_state)
+  {
+    this->current_state_ = new_state;
+  }
 
-  const EventData *m_pEventData;
-
-  virtual const StateMapRow *GetStateMap() = 0;
-
-  virtual const StateMapRowEx *GetStateMapEx() = 0;
-
-  void SetCurrentState(uint8_t newState) { m_currentState = newState; }
-
-  void StateEngine(void);
-  void StateEngine(const StateMapRow *const pStateMap);
-  void StateEngine(const StateMapRowEx *const pStateMapEx);
+  void stateEngine(void);
+  void stateEngine(const StateMapRow *const state_map_ptr);
+  void stateEngine(const StateMapRowEx *const state_map_ex_ptr);
 };
 
 #define STATE_DECLARE(stateMachine, stateName, eventData) \
@@ -188,16 +186,14 @@ private:
   entry,
 
 #define END_TRANSITION_MAP(data)                       \
-  assert(GetCurrentState() < ST_MAX_STATES);           \
-  ExternalEvent(TRANSITIONS[GetCurrentState()], data); \
-  static_assert((sizeof(TRANSITIONS) / sizeof(uint8_t)) == ST_MAX_STATES);
+  assert(getCurrentState() < ST_MAX_STATES);           \
+  externalEvent(TRANSITIONS[getCurrentState()], data); \
+  static_assert((sizeof(TRANSITIONS) / sizeof(uint8_t)) == ST_MAX_STATES, "STATE SIZE IS INVAILD");
 
 #define PARENT_TRANSITION(state)            \
-  if (GetCurrentState() >= ST_MAX_STATES && \
-      GetCurrentState() < GetMaxStates())   \
+  if (getCurrentState() >= ST_MAX_STATES && \
+      getCurrentState() < getMaxStates())   \
   {                                         \
     ExternalEvent(state);                   \
     return;                                 \
   }
-
-#endif // _STATE_MACHINE_H

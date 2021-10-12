@@ -5,12 +5,12 @@
 using namespace std;
 
 Motor::Motor() : StateMachine(ST_MAX_STATES),
-                 m_currentSpeed(0)
+                 current_speed_(0)
 {
 }
 
 // set motor speed external event
-void Motor::SetSpeed(MotorData *data)
+void Motor::setSpeed(MotorData *data)
 {
   static const uint8_t TRANSITIONS[] = {
       TRANSITION_MAP_ENTRY(ST_START)        // ST_IDLE
@@ -22,7 +22,7 @@ void Motor::SetSpeed(MotorData *data)
 }
 
 // halt motor external event
-void Motor::Halt()
+void Motor::halt()
 {
   static const uint8_t TRANSITIONS[] = {
       TRANSITION_MAP_ENTRY(EVENT_IGNORED) // ST_IDLE
@@ -36,34 +36,29 @@ void Motor::Halt()
 // state machine sits here when motor is not running
 STATE_DEFINE(Motor, Idle, NoEventData)
 {
+  (void)data; // cast to avoid gcc unused warning
   cout << "Motor::ST_Idle" << endl;
 }
 
 // stop the motor
 STATE_DEFINE(Motor, Stop, NoEventData)
 {
+  (void)data; // cast to avoid gcc unused warning
   cout << "Motor::ST_Stop" << endl;
-  m_currentSpeed = 0;
-
-  // perform the stop motor processing here
-  // transition to Idle via an internal event
-  InternalEvent(ST_IDLE);
+  this->current_speed_ = 0;
+  this->internalEvent(ST_IDLE);
 }
 
 // start the motor going
 STATE_DEFINE(Motor, Start, MotorData)
 {
   cout << "Motor::ST_Start : Speed is " << data->speed << endl;
-  m_currentSpeed = data->speed;
-
-  // set initial motor speed processing here
+  this->current_speed_ = data->speed;
 }
 
 // changes the motor speed once the motor is moving
 STATE_DEFINE(Motor, ChangeSpeed, MotorData)
 {
   cout << "Motor::ST_ChangeSpeed : Speed is " << data->speed << endl;
-  m_currentSpeed = data->speed;
-
-  // perform the change motor speed to data->speed here
+  this->current_speed_ = data->speed;
 }

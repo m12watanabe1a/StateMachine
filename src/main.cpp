@@ -6,13 +6,13 @@ int main(void)
   Motor motor;
   auto data = new MotorData();
   data->speed = 100;
-  motor.SetSpeed(data);
+  motor.setSpeed(data);
 
   auto data2 = new MotorData();
   data2->speed = 200;
-  motor.SetSpeed(data2);
+  motor.setSpeed(data2);
 
-  motor.Halt();
+  motor.halt();
   // motor.Halt();
 
   return EXIT_SUCCESS;

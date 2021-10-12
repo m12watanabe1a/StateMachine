@@ -1,5 +1,4 @@
-#ifndef _MOTOR_H
-#define _MOTOR_H
+#pragma once
 
 #include "state_machine.hpp"
 
@@ -14,15 +13,13 @@ class Motor : public StateMachine
 public:
   Motor();
 
-  // External events taken by this state machine
-  void SetSpeed(MotorData *data);
-  void Halt();
+  // External event
+  void setSpeed(MotorData *data);
+  void halt();
 
 private:
-  int m_currentSpeed;
+  int current_speed_;
 
-  // State enumeration order must match the order of state method entries
-  // in the state map.
   enum States
   {
     ST_IDLE,
@@ -32,17 +29,16 @@ private:
     ST_MAX_STATES
   };
 
-  // Define the state machine state functions with event data type
+  // States
   STATE_DECLARE(Motor, Idle, NoEventData)
   STATE_DECLARE(Motor, Stop, NoEventData)
   STATE_DECLARE(Motor, Start, MotorData)
   STATE_DECLARE(Motor, ChangeSpeed, MotorData)
 
-  // State map to define state object order. Each state map entry defines a
-  // state object.
 private:
-  virtual const StateMapRowEx *GetStateMapEx() { return nullptr; }
-  virtual const StateMapRow *GetStateMap()
+  // State map
+  virtual const StateMapRowEx *getStateMapEx() { return nullptr; }
+  virtual const StateMapRow *getStateMap()
   {
     static const StateMapRow STATE_MAP[]{
         &Idle,
@@ -50,9 +46,9 @@ private:
         &Start,
         &ChangeSpeed,
     };
-    static_assert((sizeof(STATE_MAP) / sizeof(StateMapRow)) == ST_MAX_STATES);
+    static_assert(
+        (sizeof(STATE_MAP) / sizeof(StateMapRow)) == ST_MAX_STATES,
+        "Invalid size of STATE_MAP");
     return &STATE_MAP[0];
   }
 };
-
-#endif

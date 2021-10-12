@@ -2,30 +2,31 @@
 #include <cinttypes>
 #include <cassert>
 
-//----------------------------------------------------------------------------
-// StateMachine
-//----------------------------------------------------------------------------
-StateMachine::StateMachine(uint8_t maxStates, uint8_t initialState) : MAX_STATES(maxStates),
-                                                                      m_currentState(initialState),
-                                                                      m_newState(false),
-                                                                      m_eventGenerated(false),
-                                                                      m_pEventData(NULL)
+StateMachine::StateMachine(
+    uint8_t max_states,
+    uint8_t initial_state)
+    : max_states_(max_states),
+      current_state_(initial_state),
+      new_state_(false),
+      event_generated_(false),
+      event_data_ptr(nullptr)
 {
-  assert(MAX_STATES < EVENT_IGNORED);
+  assert(max_states_ < EVENT_IGNORED);
 }
 
-//----------------------------------------------------------------------------
-// ExternalEvent
-//----------------------------------------------------------------------------
-void StateMachine::ExternalEvent(uint8_t newState, const EventData *pData)
+void StateMachine::externalEvent(
+    uint8_t new_state,
+    const EventData *data_ptr)
 {
   // If we are supposed to ignore this event
-  if (newState == EVENT_IGNORED)
+  if (new_state == EVENT_IGNORED)
   {
 #ifndef EXTERNAL_EVENT_NO_HEAP_DATA
     // Just delete the event data, if any
-    if (pData != NULL)
-      delete pData;
+    if (data_ptr != nullptr)
+    {
+      delete data_ptr;
+    }
 #endif
   }
   else
@@ -34,181 +35,193 @@ void StateMachine::ExternalEvent(uint8_t newState, const EventData *pData)
 
 #ifdef EXTERNAL_EVENT_NO_HEAP_DATA
     EventData data;
-    if (pData == NULL)
-      pData = &data;
+    if (data_ptr == nullptr)
+    {
+      data_ptr = &data;
+    }
 #endif
     // Generate the event
-    InternalEvent(newState, pData);
+    this->internalEvent(new_state, data_ptr);
 
     // Execute the state engine. This function call will only return
     // when all state machine events are processed.
-    StateEngine();
+    this->stateEngine();
 
     // TODO - release software lock here
   }
 }
 
-//----------------------------------------------------------------------------
-// InternalEvent
-//----------------------------------------------------------------------------
-void StateMachine::InternalEvent(uint8_t newState, const EventData *pData)
+void StateMachine::internalEvent(
+    uint8_t new_state,
+    const EventData *data_ptr)
 {
-  if (pData == NULL)
-    pData = new NoEventData();
+  if (data_ptr == nullptr)
+  {
+    data_ptr = new NoEventData();
+  }
 
-  m_pEventData = pData;
-  m_eventGenerated = true;
-  m_newState = newState;
+  this->event_data_ptr = data_ptr;
+  event_generated_ = true;
+  this->new_state_ = new_state;
 }
 
-//----------------------------------------------------------------------------
-// StateEngine
-//----------------------------------------------------------------------------
-void StateMachine::StateEngine(void)
+void StateMachine::stateEngine(void)
 {
-  const StateMapRow *pStateMap = GetStateMap();
-  if (pStateMap != NULL)
-    StateEngine(pStateMap);
+  const StateMapRow *state_map_ptr = this->getStateMap();
+  if (state_map_ptr != nullptr)
+  {
+    this->stateEngine(state_map_ptr);
+  }
   else
   {
-    const StateMapRowEx *pStateMapEx = GetStateMapEx();
-    if (pStateMapEx != NULL)
-      StateEngine(pStateMapEx);
+    const StateMapRowEx *state_map_ex_ptr = this->getStateMapEx();
+    if (state_map_ex_ptr != nullptr)
+    {
+      this->stateEngine(state_map_ex_ptr);
+    }
     else
+    {
       assert(false);
+    }
   }
 }
 
-//----------------------------------------------------------------------------
-// StateEngine
-//----------------------------------------------------------------------------
-void StateMachine::StateEngine(const StateMapRow *const pStateMap)
+void StateMachine::stateEngine(
+    const StateMapRow *const state_map_ptr)
 {
 #if EXTERNAL_EVENT_NO_HEAP_DATA
-  bool externalEvent = true;
+  bool external_event = true;
 #endif
-  const EventData *pDataTemp = NULL;
+  const EventData *data_ptr_tmp = nullptr;
 
   // While events are being generated keep executing states
-  while (m_eventGenerated)
+  while (this->event_generated_)
   {
     // Error check that the new state is valid before proceeding
-    assert(m_newState < MAX_STATES);
+    assert(this->new_state_ < this->max_states_);
 
     // Get the pointer from the state map
-    const StateBase *state = pStateMap[m_newState].State;
+    const StateBase *state = state_map_ptr[this->new_state_].state;
 
     // Copy of event data pointer
-    pDataTemp = m_pEventData;
+    data_ptr_tmp = this->event_data_ptr;
 
     // Event data used up, reset the pointer
-    m_pEventData = NULL;
+    this->event_data_ptr = nullptr;
 
     // Event used up, reset the flag
-    m_eventGenerated = false;
+    this->event_generated_ = false;
 
     // Switch to the new current state
-    SetCurrentState(m_newState);
+    this->setCurrentState(this->new_state_);
 
     // Execute the state action passing in event data
     assert(state != NULL);
-    state->InvokeStateAction(this, pDataTemp);
+    state->invokeStateAction(this, data_ptr_tmp);
 
     // If event data was used, then delete it
 #if EXTERNAL_EVENT_NO_HEAP_DATA
-    if (pDataTemp)
+    if (data_ptr_tmp)
     {
-      if (!externalEvent)
-        delete pDataTemp;
-      pDataTemp = NULL;
+      if (!external_event)
+      {
+        delete data_ptr_tmp;
+      }
+      data_ptr_tmp = nullptr;
     }
-    externalEvent = false;
+    external_event = false;
 #else
-    if (pDataTemp)
+    if (data_ptr_tmp)
     {
-      delete pDataTemp;
-      pDataTemp = NULL;
+      delete data_ptr_tmp;
+      data_ptr_tmp = nullptr;
     }
 #endif
   }
 }
 
-//----------------------------------------------------------------------------
-// StateEngine
-//----------------------------------------------------------------------------
-void StateMachine::StateEngine(const StateMapRowEx *const pStateMapEx)
+void StateMachine::stateEngine(
+    const StateMapRowEx *const state_map_ex_ptr)
 {
 #if EXTERNAL_EVENT_NO_HEAP_DATA
-  bool externalEvent = true;
+  bool external_event = true;
 #endif
-  const EventData *pDataTemp = NULL;
+  const EventData *data_ptr_tmp = NULL;
 
   // While events are being generated keep executing states
-  while (m_eventGenerated)
+  while (this->event_generated_)
   {
     // Error check that the new state is valid before proceeding
-    assert(m_newState < MAX_STATES);
+    assert(this->new_state_ < this->max_states_);
 
     // Get the pointers from the state map
-    const StateBase *state = pStateMapEx[m_newState].State;
-    const GuardBase *guard = pStateMapEx[m_newState].Guard;
-    const EntryBase *entry = pStateMapEx[m_newState].Entry;
-    const ExitBase *exit = pStateMapEx[m_currentState].Exit;
+    const StateBase *state = state_map_ex_ptr[this->new_state_].state;
+    const GuardBase *guard = state_map_ex_ptr[this->new_state_].guard;
+    const EntryBase *entry = state_map_ex_ptr[this->new_state_].entry;
+    const ExitBase *exit = state_map_ex_ptr[this->current_state_].exit;
 
     // Copy of event data pointer
-    pDataTemp = m_pEventData;
+    data_ptr_tmp = this->event_data_ptr;
 
     // Event data used up, reset the pointer
-    m_pEventData = NULL;
+    this->event_data_ptr = nullptr;
 
     // Event used up, reset the flag
-    m_eventGenerated = false;
+    this->event_generated_ = false;
 
     // Execute the guard condition
-    bool guardResult = true;
-    if (guard != NULL)
-      guardResult = guard->InvokeGuardCondition(this, pDataTemp);
+    bool guard_result = true;
+    if (guard != nullptr)
+    {
+      guard_result = guard->invokeGuardCondition(this, data_ptr_tmp);
+    }
 
     // If the guard condition succeeds
-    if (guardResult == true)
+    if (guard_result == true)
     {
       // Transitioning to a new state?
-      if (m_newState != m_currentState)
+      if (this->new_state_ != this->current_state_)
       {
         // Execute the state exit action on current state before switching to new state
-        if (exit != NULL)
-          exit->InvokeExitAction(this);
+        if (exit != nullptr)
+        {
+          exit->invokeExitAction(this);
+        }
 
         // Execute the state entry action on the new state
-        if (entry != NULL)
-          entry->InvokeEntryAction(this, pDataTemp);
+        if (entry != nullptr)
+        {
+          entry->invokeEntryAction(this, data_ptr_tmp);
+        }
 
         // Ensure exit/entry actions didn't call InternalEvent by accident
-        assert(m_eventGenerated == false);
+        assert(this->event_generated_ == false);
       }
 
       // Switch to the new current state
-      SetCurrentState(m_newState);
+      this->setCurrentState(this->new_state_);
 
       // Execute the state action passing in event data
-      assert(state != NULL);
-      state->InvokeStateAction(this, pDataTemp);
+      assert(state != nullptr);
+      state->invokeStateAction(this, data_ptr_tmp);
     }
 
     // If event data was used, then delete it
 #if EXTERNAL_EVENT_NO_HEAP_DATA
-    if (pDataTemp)
+    if (data_ptr_tmp)
     {
-      if (!externalEvent)
-        delete pDataTemp;
-      pDataTemp = NULL;
+      if (!external_event)
+      {
+        delete data_ptr_tmp;
+      }
+      data_ptr_tmp = nullptr;
     }
-    externalEvent = false;
+    external_event = false;
 #else
-    if (pDataTemp)
+    if (data_ptr_tmp)
     {
-      delete pDataTemp;
-      pDataTemp = NULL;
+      delete data_ptr_tmp;
+      data_ptr_tmp = nullptr;
     }
 #endif
   }
