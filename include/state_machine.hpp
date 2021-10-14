@@ -194,6 +194,19 @@ private:
   if (getCurrentState() >= ST_MAX_STATES && \
       getCurrentState() < getMaxStates())   \
   {                                         \
-    ExternalEvent(state);                   \
+    externalEvent(state);                   \
     return;                                 \
+  }
+
+#define STATE_MAP_ENTRY(stateName) \
+  stateName
+
+#define STATE_MAP_ENTRY_EX(stateName) \
+  {                                   \
+    stateName, 0, 0, 0                \
+  }
+
+#define STATE_MAP_ENTRY_ALL_EX(stateName, guardName, entryName, exitName) \
+  {                                                                       \
+    stateName, guardName, entryName, exitName                             \
   }
