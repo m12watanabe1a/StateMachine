@@ -16,30 +16,12 @@ StateMachine::StateMachine(
 
 void StateMachine::externalEvent(
     uint8_t new_state,
-    const EventData *data_ptr)
+    std::shared_ptr<const EventData> data_ptr)
 {
-  // If we are supposed to ignore this event
-  if (new_state == EVENT_IGNORED)
-  {
-#ifndef EXTERNAL_EVENT_NO_HEAP_DATA
-    // Just delete the event data, if any
-    if (data_ptr != nullptr)
-    {
-      delete data_ptr;
-    }
-#endif
-  }
-  else
+  if (new_state != EVENT_IGNORED)
   {
     // TODO - capture software lock here for thread-safety if necessary
 
-#ifdef EXTERNAL_EVENT_NO_HEAP_DATA
-    EventData data;
-    if (data_ptr == nullptr)
-    {
-      data_ptr = &data;
-    }
-#endif
     // Generate the event
     this->internalEvent(new_state, data_ptr);
 
@@ -53,11 +35,11 @@ void StateMachine::externalEvent(
 
 void StateMachine::internalEvent(
     uint8_t new_state,
-    const EventData *data_ptr)
+    std::shared_ptr<const EventData> data_ptr)
 {
-  if (data_ptr == nullptr)
+  if (data_ptr.get() == nullptr)
   {
-    data_ptr = new NoEventData();
+    data_ptr = std::make_shared<NoEventData>();
   }
 
   this->event_data_ptr = data_ptr;
@@ -103,12 +85,6 @@ void StateMachine::stateEngine(
     // Get the pointer from the state map
     const StateBase *state = state_map_ptr[this->new_state_].state;
 
-    // Copy of event data pointer
-    data_ptr_tmp = this->event_data_ptr;
-
-    // Event data used up, reset the pointer
-    this->event_data_ptr = nullptr;
-
     // Event used up, reset the flag
     this->event_generated_ = false;
 
@@ -117,7 +93,9 @@ void StateMachine::stateEngine(
 
     // Execute the state action passing in event data
     assert(state != NULL);
-    state->invokeStateAction(this, data_ptr_tmp);
+    state->invokeStateAction(
+        this->shared_from_this(),
+        this->event_data_ptr);
 
     // If event data was used, then delete it
 #if EXTERNAL_EVENT_NO_HEAP_DATA
@@ -146,7 +124,7 @@ void StateMachine::stateEngine(
 #if EXTERNAL_EVENT_NO_HEAP_DATA
   bool external_event = true;
 #endif
-  const EventData *data_ptr_tmp = NULL;
+  auto data_ptr_tmp = std::make_shared<const EventData>();
 
   // While events are being generated keep executing states
   while (this->event_generated_)
@@ -164,7 +142,7 @@ void StateMachine::stateEngine(
     data_ptr_tmp = this->event_data_ptr;
 
     // Event data used up, reset the pointer
-    this->event_data_ptr = nullptr;
+    this->event_data_ptr.reset();
 
     // Event used up, reset the flag
     this->event_generated_ = false;
@@ -173,7 +151,9 @@ void StateMachine::stateEngine(
     bool guard_result = true;
     if (guard != nullptr)
     {
-      guard_result = guard->invokeGuardCondition(this, data_ptr_tmp);
+      guard_result = guard->invokeGuardCondition(
+          this->shared_from_this(),
+          data_ptr_tmp);
     }
 
     // If the guard condition succeeds
@@ -185,13 +165,13 @@ void StateMachine::stateEngine(
         // Execute the state exit action on current state before switching to new state
         if (exit != nullptr)
         {
-          exit->invokeExitAction(this);
+          exit->invokeExitAction(this->shared_from_this());
         }
 
         // Execute the state entry action on the new state
         if (entry != nullptr)
         {
-          entry->invokeEntryAction(this, data_ptr_tmp);
+          entry->invokeEntryAction(this->shared_from_this(), data_ptr_tmp);
         }
 
         // Ensure exit/entry actions didn't call InternalEvent by accident
@@ -203,7 +183,9 @@ void StateMachine::stateEngine(
 
       // Execute the state action passing in event data
       assert(state != nullptr);
-      state->invokeStateAction(this, data_ptr_tmp);
+      state->invokeStateAction(
+          this->shared_from_this(),
+          data_ptr_tmp);
     }
 
     // If event data was used, then delete it
@@ -220,8 +202,7 @@ void StateMachine::stateEngine(
 #else
     if (data_ptr_tmp)
     {
-      delete data_ptr_tmp;
-      data_ptr_tmp = nullptr;
+      data_ptr_tmp.reset();
     }
 #endif
   }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <stdio.h>
 #include <typeinfo>
 #include <cinttypes>
@@ -18,22 +19,24 @@ class StateBase
 {
 public:
   virtual void invokeStateAction(
-      StateMachine *sm,
-      const EventData *data) const = 0;
+      std::shared_ptr<StateMachine> sm,
+      std::shared_ptr<const EventData> data) const = 0;
 };
 
-template <class SM, class Data, void (SM::*Func)(const Data *)>
+template <class SM, class Data, void (SM::*Func)(std::shared_ptr<const Data>)>
 class StateAction : public StateBase
 {
 public:
-  virtual void invokeStateAction(StateMachine *sm, const EventData *data) const
+  virtual void invokeStateAction(
+      std::shared_ptr<StateMachine> sm,
+      std::shared_ptr<const EventData> data) const
   {
-    SM *derived_sm = static_cast<SM *>(sm);
+    auto derived_sm = std::dynamic_pointer_cast<SM>(sm);
 
-    const Data *derived_data = dynamic_cast<const Data *>(data);
-    assert(derived_data != nullptr);
+    auto derived_data = std::dynamic_pointer_cast<const Data>(data);
 
-    (derived_sm->*Func)(derived_data);
+    assert(derived_data.get() != nullptr);
+    (derived_sm.get()->*Func)(derived_data);
   }
 };
 
@@ -41,41 +44,47 @@ class GuardBase
 {
 public:
   virtual bool invokeGuardCondition(
-      StateMachine *sm,
-      const EventData *data) const = 0;
+      std::shared_ptr<StateMachine> sm,
+      std::shared_ptr<const EventData> data) const = 0;
 };
 
-template <class SM, class Data, bool (SM::*Func)(const Data *)>
+template <class SM, class Data, bool (SM::*Func)(std::shared_ptr<const Data>)>
 class GuardCondition : public GuardBase
 {
 public:
-  virtual bool invokeGuardCondition(StateMachine *sm, const EventData *data) const
+  virtual bool invokeGuardCondition(
+      std::shared_ptr<StateMachine> sm,
+      std::shared_ptr<const EventData> data) const
   {
-    SM *derived_sm = static_cast<SM *>(sm);
-    const Data *derived_data = dynamic_cast<const Data *>(data);
-    assert(derived_data != NULL);
+    auto derived_sm = std::dynamic_pointer_cast<SM>(sm);
+    auto derived_data = std::dynamic_pointer_cast<const Data>(data);
+    assert(derived_data.get() != nullptr);
 
-    return (derived_sm->*Func)(derived_data);
+    return (derived_sm.get()->*Func)(derived_data);
   }
 };
 
 class EntryBase
 {
 public:
-  virtual void invokeEntryAction(StateMachine *sm, const EventData *data) const = 0;
+  virtual void invokeEntryAction(
+      std::shared_ptr<StateMachine> sm,
+      std::shared_ptr<const EventData> data) const = 0;
 };
 
-template <class SM, class Data, void (SM::*Func)(const Data *)>
+template <class SM, class Data, void (SM::*Func)(std::shared_ptr<const Data>)>
 class EntryAction : public EntryBase
 {
 public:
-  virtual void invokeEntryAction(StateMachine *sm, const EventData *data) const
+  virtual void invokeEntryAction(
+      std::shared_ptr<StateMachine> sm,
+      std::shared_ptr<const EventData> data) const
   {
-    SM *derived_sm = static_cast<SM *>(sm);
-    const Data *derived_data = dynamic_cast<const Data *>(data);
-    assert(derived_data != nullptr);
+    auto derived_sm = std::dynamic_pointer_cast<SM>(sm);
+    auto derived_data = std::dynamic_pointer_cast<const Data>(data);
+    assert(derived_data.get() != nullptr);
 
-    (derived_sm->*Func)(derived_data);
+    (derived_sm.get()->*Func)(derived_data);
   }
 };
 
@@ -83,18 +92,19 @@ class ExitBase
 {
 public:
   virtual void invokeExitAction(
-      StateMachine *sm) const = 0;
+      std::shared_ptr<StateMachine> sm) const = 0;
 };
 
 template <class SM, void (SM::*Func)(void)>
 class ExitAction : public ExitBase
 {
 public:
-  virtual void invokeExitAction(StateMachine *sm) const
+  virtual void invokeExitAction(
+      std::shared_ptr<StateMachine> sm) const
   {
-    SM *derived_sm = static_cast<SM *>(sm);
+    auto derived_sm = std::dynamic_pointer_cast<SM>(sm);
 
-    (derived_sm->*Func)();
+    (derived_sm.get()->*Func)();
   }
 };
 
@@ -111,7 +121,7 @@ struct StateMapRowEx
   const ExitBase *const exit;
 };
 
-class StateMachine
+class StateMachine : public std::enable_shared_from_this<StateMachine>
 {
 public:
   enum
@@ -128,10 +138,10 @@ public:
 protected:
   void externalEvent(
       uint8_t new_state,
-      const EventData *data_ptr = nullptr);
+      std::shared_ptr<const EventData> data_ptr = nullptr);
   void internalEvent(
       uint8_t new_state,
-      const EventData *data_ptr = nullptr);
+      std::shared_ptr<const EventData> data_ptr = nullptr);
 
 private:
   const uint8_t max_states_;
@@ -140,7 +150,7 @@ private:
 
   bool event_generated_;
 
-  const EventData *event_data_ptr;
+  std::shared_ptr<const EventData> event_data_ptr;
   virtual const StateMapRow *getStateMap() = 0;
   virtual const StateMapRowEx *getStateMapEx() = 0;
 
@@ -155,25 +165,25 @@ private:
 };
 
 #define STATE_DECLARE(stateMachine, stateName, eventData) \
-  void ST_##stateName(const eventData *);                 \
+  void ST_##stateName(std::shared_ptr<const eventData>);  \
   StateAction<stateMachine, eventData, &stateMachine::ST_##stateName> stateName;
 
 #define STATE_DEFINE(stateMachine, stateName, eventData) \
-  void stateMachine::ST_##stateName(const eventData *data)
+  void stateMachine::ST_##stateName(std::shared_ptr<const eventData> data)
 
 #define GUARD_DECLARE(stateMachine, guardName, eventData) \
-  bool GD_##guardName(const eventData *);                 \
+  bool GD_##guardName(std::shared_ptr<const eventData>);  \
   GuardCondition<stateMachine, eventData, &stateMachine::GD_##guardName> guardName;
 
 #define GUARD_DEFINE(stateMachine, guardName, eventData) \
-  bool stateMachine::GD_##guardName(const eventData *data)
+  bool stateMachine::GD_##guardName(std::shared_ptr<const eventData> data)
 
 #define ENTRY_DECLARE(stateMachine, entryName, eventData) \
-  void EN_##entryName(const eventData *);                 \
+  void EN_##entryName(std::shared_ptr<const eventData>);  \
   EntryAction<stateMachine, eventData, &stateMachine::EN_##entryName> entryName;
 
 #define ENTRY_DEFINE(stateMachine, entryName, eventData) \
-  void stateMachine::EN_##entryName(const eventData *data)
+  void stateMachine::EN_##entryName(std::shared_ptr<const eventData> data)
 
 #define EXIT_DECLARE(stateMachine, exitName) \
   void EX_##exitName(void);                  \

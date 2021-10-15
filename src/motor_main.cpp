@@ -3,17 +3,15 @@
 
 int main(void)
 {
-  Motor motor;
-  auto data = new MotorData();
+  auto motor = std::make_shared<Motor>();
+  auto data = std::make_shared<MotorData>();
   data->speed = 100;
-  motor.setSpeed(data);
+  motor->setSpeed(data);
 
-  auto data2 = new MotorData();
-  data2->speed = 200;
-  motor.setSpeed(data2);
+  data->speed = 200;
+  motor->setSpeed(data);
 
-  motor.halt();
-  // motor.Halt();
+  motor->halt();
 
   return EXIT_SUCCESS;
 }

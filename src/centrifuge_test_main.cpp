@@ -3,12 +3,12 @@
 
 int main(void)
 {
-  CentrifugeTest test;
-  test.cancel();
-  test.start();
-  while (test.isPollActive())
+  auto test = std::make_shared<CentrifugeTest>();
+  test->cancel();
+  test->start();
+  while (test->isPollActive())
   {
-    test.poll();
+    test->poll();
   }
   return EXIT_SUCCESS;
 }
