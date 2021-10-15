@@ -71,50 +71,26 @@ void StateMachine::stateEngine(void)
 void StateMachine::stateEngine(
     const StateMapRow *const state_map_ptr)
 {
-#if EXTERNAL_EVENT_NO_HEAP_DATA
-  bool external_event = true;
-#endif
-  const EventData *data_ptr_tmp = nullptr;
-
-  // While events are being generated keep executing states
+  auto data_ptr_tmp = std::make_shared<const EventData>();
   while (this->event_generated_)
   {
-    // Error check that the new state is valid before proceeding
     assert(this->new_state_ < this->max_states_);
-
-    // Get the pointer from the state map
     const StateBase *state = state_map_ptr[this->new_state_].state;
-
-    // Event used up, reset the flag
+    data_ptr_tmp = this->event_data_ptr;
+    this->event_data_ptr.reset();
     this->event_generated_ = false;
-
-    // Switch to the new current state
     this->setCurrentState(this->new_state_);
 
-    // Execute the state action passing in event data
-    assert(state != NULL);
+    assert(state != nullptr);
     state->invokeStateAction(
         this->shared_from_this(),
-        this->event_data_ptr);
+        data_ptr_tmp);
 
     // If event data was used, then delete it
-#if EXTERNAL_EVENT_NO_HEAP_DATA
     if (data_ptr_tmp)
     {
-      if (!external_event)
-      {
-        delete data_ptr_tmp;
-      }
-      data_ptr_tmp = nullptr;
+      data_ptr_tmp.reset();
     }
-    external_event = false;
-#else
-    if (data_ptr_tmp)
-    {
-      delete data_ptr_tmp;
-      data_ptr_tmp = nullptr;
-    }
-#endif
   }
 }
 

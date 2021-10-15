@@ -33,7 +33,6 @@ public:
       std::shared_ptr<const EventData> data) const
   {
     auto derived_sm = std::dynamic_pointer_cast<SM>(sm);
-
     auto derived_data = std::dynamic_pointer_cast<const Data>(data);
 
     assert(derived_data.get() != nullptr);
@@ -83,8 +82,8 @@ public:
   {
     auto derived_sm = std::dynamic_pointer_cast<SM>(sm);
     auto derived_data = std::dynamic_pointer_cast<const Data>(data);
-    assert(derived_data.get() != nullptr);
 
+    assert(derived_data.get() != nullptr);
     (derived_sm.get()->*Func)(derived_data);
   }
 };
