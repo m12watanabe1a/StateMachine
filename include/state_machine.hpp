@@ -5,6 +5,7 @@
 #include <typeinfo>
 #include <cinttypes>
 #include <cassert>
+#include <vector>
 
 class EventData
 {
@@ -130,10 +131,10 @@ public:
     CANNOT_HAPPEN
   };
 
-  StateMachine(uint8_t max_states, uint8_t initial_state = 0);
+  StateMachine(size_t max_states, uint8_t initial_state = 0);
   virtual ~StateMachine() {}
   uint8_t getCurrentState() { return this->current_state_; }
-  uint8_t getMaxStates() { return this->max_states_; }
+  size_t getMaxStates() { return this->max_states_; }
 
 protected:
   void externalEvent(
@@ -144,7 +145,7 @@ protected:
       std::shared_ptr<const EventData> data_ptr = nullptr);
 
 private:
-  const uint8_t max_states_;
+  const size_t max_states_;
   uint8_t current_state_;
   uint8_t new_state_;
 

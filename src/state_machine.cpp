@@ -3,7 +3,7 @@
 #include <cassert>
 
 StateMachine::StateMachine(
-    uint8_t max_states,
+    size_t max_states,
     uint8_t initial_state)
     : max_states_(max_states),
       current_state_(initial_state),
