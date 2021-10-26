@@ -37,7 +37,7 @@ void StateMachine::internalEvent(
     uint8_t new_state,
     std::shared_ptr<const EventData> data_ptr)
 {
-  if (data_ptr.get() == nullptr)
+  if (data_ptr == nullptr)
   {
     data_ptr = std::make_shared<NoEventData>();
   }
@@ -97,9 +97,6 @@ void StateMachine::stateEngine(
 void StateMachine::stateEngine(
     const StateMapRowEx *const state_map_ex_ptr)
 {
-#if EXTERNAL_EVENT_NO_HEAP_DATA
-  bool external_event = true;
-#endif
   auto data_ptr_tmp = std::make_shared<const EventData>();
 
   // While events are being generated keep executing states
@@ -165,21 +162,9 @@ void StateMachine::stateEngine(
     }
 
     // If event data was used, then delete it
-#if EXTERNAL_EVENT_NO_HEAP_DATA
-    if (data_ptr_tmp)
-    {
-      if (!external_event)
-      {
-        delete data_ptr_tmp;
-      }
-      data_ptr_tmp = nullptr;
-    }
-    external_event = false;
-#else
     if (data_ptr_tmp)
     {
       data_ptr_tmp.reset();
     }
-#endif
   }
 }
