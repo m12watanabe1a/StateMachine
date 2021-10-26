@@ -63,7 +63,7 @@ STATE_DEFINE(
     NoEventData)
 {
   (void)data;
-  std::cout << "CentrifugeTest::GD_GuardStartTest" << std::endl;
+  std::cout << "CentrifugeTest::GD_StartTest" << std::endl;
   this->internalEvent(ST_ACCELERATION);
 }
 
@@ -76,10 +76,12 @@ GUARD_DEFINE(
   std::cout << "CentrifugeTest::GD_GuardStartTest" << std::endl;
   if (this->speed_ == 0)
   {
+    std::cout << "centrifugeTest::ActionAccepted" << std::endl;
     return true;
   }
   else
   {
+    std::cout << "centrifugeTest::ActionCancled" << std::endl;
     return false;
   }
 }
