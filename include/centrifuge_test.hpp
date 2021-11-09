@@ -44,14 +44,14 @@ private:
   virtual const StateMapRowEx *getStateMapEx()
   {
     static const StateMapRowEx STATE_MAP[] = {
-        STATE_MAP_ENTRY_ALL_EX(&Idle, 0, &EntryIdle, 0),
+        STATE_MAP_ENTRY_ALL_EX(&Idle, nullptr, &EntryIdle, nullptr),
         STATE_MAP_ENTRY_EX(&Completed),
         STATE_MAP_ENTRY_EX(&Failed),
-        STATE_MAP_ENTRY_ALL_EX(&StartTest, &GuardStartTest, 0, 0),
+        STATE_MAP_ENTRY_ALL_EX(&StartTest, &GuardStartTest, nullptr, nullptr),
         STATE_MAP_ENTRY_EX(&Acceleration),
-        STATE_MAP_ENTRY_ALL_EX(&WaitForAcceleration, 0, 0, &ExitWaitForAcceleration),
+        STATE_MAP_ENTRY_ALL_EX(&WaitForAcceleration, nullptr, nullptr, &ExitWaitForAcceleration),
         STATE_MAP_ENTRY_EX(&Deceleration),
-        STATE_MAP_ENTRY_ALL_EX(&WaitForDeceleration, 0, 0, &ExitWaitForDeceleration)
+        STATE_MAP_ENTRY_ALL_EX(&WaitForDeceleration, nullptr, nullptr, &ExitWaitForDeceleration)
     };
     static_assert(
         (sizeof(STATE_MAP) / sizeof(StateMapRowEx)) == ST_MAX_STATES,
