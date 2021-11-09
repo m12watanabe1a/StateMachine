@@ -20,7 +20,7 @@ class StateBase
 {
 public:
   virtual void invokeStateAction(
-      std::shared_ptr<StateMachine> sm,
+      StateMachine *sm,
       std::shared_ptr<const EventData> data) const = 0;
 };
 
@@ -29,14 +29,14 @@ class StateAction : public StateBase
 {
 public:
   virtual void invokeStateAction(
-      std::shared_ptr<StateMachine> sm,
+      StateMachine *sm,
       std::shared_ptr<const EventData> data) const
   {
-    auto derived_sm = std::dynamic_pointer_cast<SM>(sm);
+    auto derived_sm = static_cast<SM *>(sm);
     auto derived_data = std::dynamic_pointer_cast<const Data>(data);
 
     assert(derived_data.get() != nullptr);
-    (derived_sm.get()->*Func)(derived_data);
+    (derived_sm->*Func)(derived_data);
   }
 };
 
@@ -44,7 +44,7 @@ class GuardBase
 {
 public:
   virtual bool invokeGuardCondition(
-      std::shared_ptr<StateMachine> sm,
+      StateMachine *sm,
       std::shared_ptr<const EventData> data) const = 0;
 };
 
@@ -53,14 +53,14 @@ class GuardCondition : public GuardBase
 {
 public:
   virtual bool invokeGuardCondition(
-      std::shared_ptr<StateMachine> sm,
+      StateMachine *sm,
       std::shared_ptr<const EventData> data) const
   {
-    auto derived_sm = std::dynamic_pointer_cast<SM>(sm);
+    auto derived_sm = static_cast<SM *>(sm);
     auto derived_data = std::dynamic_pointer_cast<const Data>(data);
     assert(derived_data.get() != nullptr);
 
-    return (derived_sm.get()->*Func)(derived_data);
+    return (derived_sm->*Func)(derived_data);
   }
 };
 
@@ -68,7 +68,7 @@ class EntryBase
 {
 public:
   virtual void invokeEntryAction(
-      std::shared_ptr<StateMachine> sm,
+      StateMachine *sm,
       std::shared_ptr<const EventData> data) const = 0;
 };
 
@@ -77,14 +77,14 @@ class EntryAction : public EntryBase
 {
 public:
   virtual void invokeEntryAction(
-      std::shared_ptr<StateMachine> sm,
+      StateMachine *sm,
       std::shared_ptr<const EventData> data) const
   {
-    auto derived_sm = std::dynamic_pointer_cast<SM>(sm);
+    auto derived_sm = static_cast<SM *>(sm);
     auto derived_data = std::dynamic_pointer_cast<const Data>(data);
 
     assert(derived_data.get() != nullptr);
-    (derived_sm.get()->*Func)(derived_data);
+    (derived_sm->*Func)(derived_data);
   }
 };
 
@@ -92,7 +92,7 @@ class ExitBase
 {
 public:
   virtual void invokeExitAction(
-      std::shared_ptr<StateMachine> sm) const = 0;
+      StateMachine *sm) const = 0;
 };
 
 template <class SM, void (SM::*Func)(void)>
@@ -100,11 +100,11 @@ class ExitAction : public ExitBase
 {
 public:
   virtual void invokeExitAction(
-      std::shared_ptr<StateMachine> sm) const
+      StateMachine *sm) const
   {
-    auto derived_sm = std::dynamic_pointer_cast<SM>(sm);
+    auto derived_sm = static_cast<SM *>(sm);
 
-    (derived_sm.get()->*Func)();
+    (derived_sm->*Func)();
   }
 };
 
@@ -121,7 +121,7 @@ struct StateMapRowEx
   const ExitBase *const exit;
 };
 
-class StateMachine : public std::enable_shared_from_this<StateMachine>
+class StateMachine
 {
 public:
   enum

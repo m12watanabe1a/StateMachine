@@ -83,7 +83,7 @@ void StateMachine::stateEngine(
 
     assert(state != nullptr);
     state->invokeStateAction(
-        this->shared_from_this(),
+        this,
         data_ptr_tmp);
 
     // If event data was used, then delete it
@@ -125,7 +125,7 @@ void StateMachine::stateEngine(
     if (guard != nullptr)
     {
       guard_result = guard->invokeGuardCondition(
-          this->shared_from_this(),
+          this,
           data_ptr_tmp);
     }
 
@@ -138,13 +138,13 @@ void StateMachine::stateEngine(
         // Execute the state exit action on current state before switching to new state
         if (exit != nullptr)
         {
-          exit->invokeExitAction(this->shared_from_this());
+          exit->invokeExitAction(this);
         }
 
         // Execute the state entry action on the new state
         if (entry != nullptr)
         {
-          entry->invokeEntryAction(this->shared_from_this(), data_ptr_tmp);
+          entry->invokeEntryAction(this, data_ptr_tmp);
         }
 
         // Ensure exit/entry actions didn't call InternalEvent by accident
@@ -157,7 +157,7 @@ void StateMachine::stateEngine(
       // Execute the state action passing in event data
       assert(state != nullptr);
       state->invokeStateAction(
-          this->shared_from_this(),
+          this,
           data_ptr_tmp);
     }
 
